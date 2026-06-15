@@ -66,21 +66,31 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Generate full React Native project and build iOS
+      - name: Generate full React Native project
         run: |
           npx --yes @react-native-community/cli init WalkieTalkie --version 0.73.4 --directory rn_project --skip-git-init --skip-install
-          cp -r rn_project/ios ./ios_full
+          
+          # Replace our partial ios directory with the fully generated one
+          rm -rf ios
+          cp -r rn_project/ios ./ios
           rm -rf rn_project
 
-          # Merge generated iOS project with our config
-          cp -r ios_full/* ios/ 2>/dev/null || true
-          rm -rf ios_full
+          # Copy our Info.plist overrides (microphone permission etc)
+          # The generated one is fine as base, we just add our keys
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'WalkieTalkie needs microphone access to transmit your voice when you press the Push-to-Talk button.'" ios/WalkieTalkie/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/WalkieTalkie/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/WalkieTalkie/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:1 string voip" ios/WalkieTalkie/Info.plist 2>/dev/null || true
 
-          npm install
+      - name: Install dependencies
+        run: npm install
 
+      - name: Install CocoaPods
+        run: cd ios && pod install
+
+      - name: Build iOS
+        run: |
           cd ios
-          pod install
-
           xcodebuild -workspace WalkieTalkie.xcworkspace \
             -scheme WalkieTalkie \
             -configuration Release \
