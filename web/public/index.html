@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WalkieTalkie - Push-to-Talk Communication</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a1a;
+      --bg-secondary: #12122a;
+      --bg-card: #1a1a3e;
+      --accent: #e94560;
+      --accent-hover: #ff6b81;
+      --text-primary: #ffffff;
+      --text-secondary: #8892b0;
+      --text-muted: #495670;
+      --border: #1e1e4a;
+      --success: #52b788;
+      --warning: #f4a261;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(233, 69, 96, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(82, 183, 136, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(244, 162, 97, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffffff 0%, #8892b0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-description {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    /* Download Buttons */
+    .download-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 32px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .download-btn.android {
+      background: linear-gradient(135deg, #1b4332, #2d6a4f);
+      color: #95d5b2;
+      border: 1px solid #2d6a4f;
+    }
+
+    .download-btn.android:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(82, 183, 136, 0.2);
+    }
+
+    .download-btn.ios {
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e);
+      color: #a5b4fc;
+      border: 1px solid #3730a3;
+    }
+
+    .download-btn.ios:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(165, 180, 252, 0.2);
+    }
+
+    .download-btn .icon {
+      font-size: 24px;
+    }
+
+    .download-btn .btn-text {
+      text-align: left;
+    }
+
+    .download-btn .btn-text small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.7;
+    }
+
+    .version-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Features */
+    .features {
+      padding: 80px 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: border-color 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+    }
+
+    .feature-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* How it works */
+    .how-it-works {
+      padding: 80px 0;
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin-bottom: 48px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .step {
+      text-align: center;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .step h4 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Specs */
+    .specs {
+      padding: 60px 0;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .spec-item {
+      text-align: center;
+    }
+
+    .spec-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .spec-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Setup Instructions */
+    .setup {
+      padding: 80px 0;
+    }
+
+    .setup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .setup-card h3 {
+      font-size: 20px;
+      margin-bottom: 24px;
+    }
+
+    .setup-steps {
+      list-style: none;
+      counter-reset: setup-counter;
+    }
+
+    .setup-steps li {
+      counter-increment: setup-counter;
+      padding: 12px 0;
+      padding-left: 40px;
+      position: relative;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setup-steps li:last-child {
+      border-bottom: none;
+    }
+
+    .setup-steps li::before {
+      content: counter(setup-counter);
+      position: absolute;
+      left: 0;
+      width: 24px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .code-block {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--success);
+      overflow-x: auto;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      position: relative;
+    }
+
+    .modal h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .modal p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .modal .code-block {
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+
+    .modal-close:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+
+    .modal-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .modal-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: 48px 0 40px;
+      }
+
+      .download-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .download-btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  
+  <div class="container">
+    <nav>
+      <div class="logo">
+        <span class="logo-icon">📻</span>
+        <span>WalkieTalkie</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it Works</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="#setup">Setup</a></li>
+      </ul>
+    </nav>
+
+    <section class="hero" id="download">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        <span>v1.0.0 — Free & Open Source</span>
+      </div>
+      <h1>Real <span>Push-to-Talk</span><br>Communication</h1>
+      <p class="hero-description">
+        A true walkie-talkie experience on your phone. 100 channels, crystal-clear audio, 
+        and strict one-at-a-time talking — just like real radio comms.
+      </p>
+
+      <div class="download-buttons">
+        <a href="/downloads/WalkieTalkie.apk" id="btn-android" onclick="return handleDownload('android', event)" class="download-btn android">
+          <span class="icon">🤖</span>
+          <span class="btn-text">
+            <small>Download for</small>
+            Android (APK)
+          </span>
+        </a>
+        <a href="/downloads/WalkieTalkie.ipa" id="btn-ios" onclick="return handleDownload('ios', event)" class="download-btn ios">
+          <span class="icon">🍎</span>
+          <span class="btn-text">
+            <small>Download for</small>
+            iOS (IPA)
+          </span>
+        </a>
+      </div>
+      <p class="version-info">Version 1.0.0 • ~25MB • Requires iOS 14+ / Android 8+</p>
+    </section>
+
+    <section class="specs">
+      <div class="specs-grid">
+        <div class="spec-item">
+          <div class="spec-value">100</div>
+          <div class="spec-label">Channels</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-value">∞</div>
+          <div class="spec-label">Users per Channel</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-value">&lt;50ms</div>
+          <div class="spec-label">Latency</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-value">0</div>
+          <div class="spec-label">Crosstalk</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎙️</div>
+          <h3>Push-to-Talk</h3>
+          <p>Press and hold to transmit. Release to listen. Just like a real walkie-talkie — no open mics, no background noise.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🚫</div>
+          <h3>No Crosstalk</h3>
+          <p>Only one person can transmit at a time per channel. The server enforces strict floor control — no talking over each other.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📡</div>
+          <h3>100 Channels</h3>
+          <p>Choose from 100 independent channels. Organize teams, groups, or events on separate frequencies.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3>Multi-User</h3>
+          <p>Unlimited users can join the same channel. Everyone hears the transmission, one person speaks at a time.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Low Latency</h3>
+          <p>WebRTC peer-to-peer audio with sub-50ms latency. Real-time communication that feels instant.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Queue System</h3>
+          <p>If someone is already transmitting, you're placed in queue. Your turn comes automatically when the channel clears.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-it-works" id="how-it-works">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-subtitle">Simple as a real walkie-talkie</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h4>Set Your Callsign</h4>
+          <p>Choose a unique name so others can identify you on the channel.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h4>Join a Channel</h4>
+          <p>Select any channel from 1-100. Anyone on the same channel can hear you.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h4>Push to Talk</h4>
+          <p>Press and hold the big PTT button to transmit. Release when done.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h4>Listen</h4>
+          <p>When someone else is transmitting, you'll hear them automatically.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="setup" id="setup">
+      <div class="setup-card">
+        <h3>📱 Installation Guide</h3>
+        <ul class="setup-steps">
+          <li>
+            <strong>Android:</strong> Download the APK file above. You may need to enable 
+            "Install from Unknown Sources" in your device settings. Open the file and tap Install.
+          </li>
+          <li>
+            <strong>iOS:</strong> Download the IPA file. You'll need to sideload it using 
+            AltStore, Sideloadly, or a similar tool. Connect your device and follow the tool's instructions.
+          </li>
+          <li>
+            <strong>Permissions:</strong> Grant microphone access when prompted. The app only 
+            transmits audio when you press the PTT button.
+          </li>
+          <li>
+            <strong>Server:</strong> The app connects to our signaling server automatically. 
+            No additional setup required.
+            <div class="code-block">Server: walkie-talkie-server.onrender.com</div>
+          </li>
+          <li>
+            <strong>Build from Source:</strong> Clone the repo and build with React Native CLI.
+            <div class="code-block">git clone &lt;repo-url&gt; && cd mobile && npm install && npx react-native run-android</div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      <p>WalkieTalkie v1.0.0 — Push-to-Talk Communication App</p>
+      <p style="margin-top: 8px;">Built with React Native • WebRTC • Socket.IO</p>
+    </footer>
+  </div>
+
+  <!-- Download Modal -->
+  <div class="modal-overlay" id="downloadModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3 id="modalTitle">📦 Build Instructions</h3>
+      <p id="modalDesc"></p>
+      <div class="code-block" id="modalCode"></div>
+      <p style="font-size:13px; color: var(--text-muted); margin-bottom: 16px;">
+        Once built, place the file in <code>web/public/downloads/</code> and the download link will work directly.
+      </p>
+      <button class="modal-btn" onclick="closeModal()">Got it</button>
+    </div>
+  </div>
+
+  <script>
+    let downloadInfo = { android: { available: false }, ios: { available: false } };
+
+    // Check if actual download files exist on the server
+    fetch('/api/downloads')
+      .then(r => r.json())
+      .then(data => {
+        downloadInfo = data;
+        // Update button states
+        if (data.android.available) {
+          const btn = document.getElementById('btn-android');
+          btn.href = data.android.url;
+          btn.onclick = null;
+          btn.querySelector('small').textContent = 'Download for — ' + data.android.size;
+        }
+        if (data.ios.available) {
+          const btn = document.getElementById('btn-ios');
+          btn.href = data.ios.url;
+          btn.onclick = null;
+          btn.querySelector('small').textContent = 'Download for — ' + data.ios.size;
+        }
+      })
+      .catch(() => {});
+
+    function handleDownload(platform, event) {
+      const info = downloadInfo[platform];
+      if (info && info.available) {
+        // File exists — let the browser download it naturally
+        return true;
+      }
+      // File doesn't exist — show modal
+      event.preventDefault();
+      showBuildModal(platform);
+      return false;
+    }
+
+    function showBuildModal(platform) {
+      const modal = document.getElementById('downloadModal');
+      const title = document.getElementById('modalTitle');
+      const desc = document.getElementById('modalDesc');
+      const code = document.getElementById('modalCode');
+
+      if (platform === 'android') {
+        title.textContent = '🤖 Android APK — Not Yet Built';
+        desc.innerHTML = 'The APK hasn\'t been built yet. To make it available for download:<br><br>'
+          + '<strong>Option 1:</strong> Push this project to GitHub — the included GitHub Actions workflow will automatically build the APK and make it downloadable.<br><br>'
+          + '<strong>Option 2:</strong> Build manually if you have Android Studio installed:';
+        code.innerHTML = 'cd mobile && npm install<br>cd android && ./gradlew assembleRelease<br><br>'
+          + '<span style="color:#8892b0"># Then copy the APK to the web server:</span><br>'
+          + 'cp app/build/outputs/apk/release/app-release.apk ../../web/public/downloads/WalkieTalkie.apk';
+      } else {
+        title.textContent = '🍎 iOS IPA — Not Yet Built';
+        desc.innerHTML = 'The IPA hasn\'t been built yet. To make it available for download:<br><br>'
+          + '<strong>Option 1:</strong> Push to GitHub — the included GitHub Actions workflow builds the IPA automatically on a Mac runner.<br><br>'
+          + '<strong>Option 2:</strong> Build manually on a Mac with Xcode:';
+        code.innerHTML = 'cd mobile && npm install<br>cd ios && pod install<br>xcodebuild archive ...<br><br>'
+          + '<span style="color:#8892b0"># Then copy to web server:</span><br>'
+          + 'cp WalkieTalkie.ipa ../../web/public/downloads/WalkieTalkie.ipa';
+      }
+
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('downloadModal').classList.remove('active');
+    }
+
+    document.getElementById('downloadModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>

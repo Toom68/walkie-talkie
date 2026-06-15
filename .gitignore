@@ -1,0 +1,24 @@
+node_modules/
+.DS_Store
+*.log
+
+# Mobile
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/ios/build/
+mobile/ios/Pods/
+mobile/ios/*.xcworkspace
+*.hmap
+*.ipa
+*.apk
+*.dSYM.zip
+*.dSYM
+
+# Downloads (built binaries - don't commit large files)
+web/public/downloads/*.apk
+web/public/downloads/*.ipa
+
+# Environment
+.env
+.env.local

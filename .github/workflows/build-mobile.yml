@@ -1,0 +1,153 @@
+name: Build Mobile Apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Android project (if needed)
+        run: |
+          if [ ! -f android/build.gradle ]; then
+            npx react-native init WalkieTalkie --directory temp_init --version 0.73.4
+            cp -r temp_init/android/* android/ 2>/dev/null || true
+            cp -r temp_init/android/.* android/ 2>/dev/null || true
+            rm -rf temp_init
+          fi
+
+      - name: Build Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalkieTalkie-Android
+          path: mobile/android/app/build/outputs/apk/release/*.apk
+
+      - name: Copy APK to web downloads
+        run: |
+          mkdir -p ../web/public/downloads
+          cp android/app/build/outputs/apk/release/app-release.apk ../web/public/downloads/WalkieTalkie.apk
+
+      - name: Upload web downloads
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-downloads-android
+          path: web/public/downloads/WalkieTalkie.apk
+
+  build-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate iOS project (if needed)
+        run: |
+          if [ ! -f ios/WalkieTalkie.xcodeproj/project.pbxproj ]; then
+            npx react-native init WalkieTalkie --directory temp_init --version 0.73.4
+            cp -r temp_init/ios/* ios/ 2>/dev/null || true
+            rm -rf temp_init
+          fi
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+
+      - name: Build iOS Archive
+        run: |
+          cd ios
+          xcodebuild -workspace WalkieTalkie.xcworkspace \
+            -scheme WalkieTalkie \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination generic/platform=iOS \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -archivePath build/WalkieTalkie.xcarchive \
+            archive
+
+      - name: Create IPA
+        run: |
+          cd ios/build/WalkieTalkie.xcarchive/Products/Applications
+          mkdir -p Payload
+          cp -r WalkieTalkie.app Payload/
+          zip -r ../../../../../WalkieTalkie.ipa Payload
+          mkdir -p ../../../../web/public/downloads
+          cp ../../../../../WalkieTalkie.ipa ../../../../web/public/downloads/
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalkieTalkie-iOS
+          path: mobile/ios/WalkieTalkie.ipa
+
+  deploy-web:
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: web-downloads-android
+          path: web/public/downloads/
+        continue-on-error: true
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: WalkieTalkie-iOS
+          path: web/public/downloads/
+        continue-on-error: true
+
+      - name: List downloads
+        run: ls -la web/public/downloads/

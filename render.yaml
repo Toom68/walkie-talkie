@@ -1,0 +1,24 @@
+services:
+  # Backend signaling server
+  - type: web
+    name: walkie-talkie-server
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  # Frontend download page
+  - type: web
+    name: walkie-talkie-web
+    env: node
+    plan: free
+    rootDir: web
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
