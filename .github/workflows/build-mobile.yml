@@ -19,8 +19,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: mobile/package-lock.json
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -31,20 +29,19 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Generate Android project (if needed)
+      - name: Generate full React Native project and build APK
         run: |
-          if [ ! -f android/build.gradle ]; then
-            npx react-native init WalkieTalkie --directory temp_init --version 0.73.4
-            cp -r temp_init/android/* android/ 2>/dev/null || true
-            cp -r temp_init/android/.* android/ 2>/dev/null || true
-            rm -rf temp_init
-          fi
+          npx --yes @react-native-community/cli init WalkieTalkie --version 0.73.4 --directory rn_project --skip-git-init --skip-install
+          cp -r rn_project/android ./android_full
+          rm -rf rn_project
 
-      - name: Build Release APK
-        run: |
+          # Merge our source into the generated project
+          cp -r android_full/* android/ 2>/dev/null || true
+          cp -r android_full/.* android/ 2>/dev/null || true
+          rm -rf android_full
+
+          npm install
+
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
@@ -54,17 +51,6 @@ jobs:
         with:
           name: WalkieTalkie-Android
           path: mobile/android/app/build/outputs/apk/release/*.apk
-
-      - name: Copy APK to web downloads
-        run: |
-          mkdir -p ../web/public/downloads
-          cp android/app/build/outputs/apk/release/app-release.apk ../web/public/downloads/WalkieTalkie.apk
-
-      - name: Upload web downloads
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-downloads-android
-          path: web/public/downloads/WalkieTalkie.apk
 
   build-ios:
     runs-on: macos-latest
@@ -79,28 +65,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: mobile/package-lock.json
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Generate iOS project (if needed)
+      - name: Generate full React Native project and build iOS
         run: |
-          if [ ! -f ios/WalkieTalkie.xcodeproj/project.pbxproj ]; then
-            npx react-native init WalkieTalkie --directory temp_init --version 0.73.4
-            cp -r temp_init/ios/* ios/ 2>/dev/null || true
-            rm -rf temp_init
-          fi
+          npx --yes @react-native-community/cli init WalkieTalkie --version 0.73.4 --directory rn_project --skip-git-init --skip-install
+          cp -r rn_project/ios ./ios_full
+          rm -rf rn_project
 
-      - name: Install CocoaPods
-        run: |
+          # Merge generated iOS project with our config
+          cp -r ios_full/* ios/ 2>/dev/null || true
+          rm -rf ios_full
+
+          npm install
+
           cd ios
           pod install
 
-      - name: Build iOS Archive
-        run: |
-          cd ios
           xcodebuild -workspace WalkieTalkie.xcworkspace \
             -scheme WalkieTalkie \
             -configuration Release \
@@ -118,8 +98,6 @@ jobs:
           mkdir -p Payload
           cp -r WalkieTalkie.app Payload/
           zip -r ../../../../../WalkieTalkie.ipa Payload
-          mkdir -p ../../../../web/public/downloads
-          cp ../../../../../WalkieTalkie.ipa ../../../../web/public/downloads/
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
